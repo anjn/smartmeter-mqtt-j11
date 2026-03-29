@@ -1,0 +1,14 @@
+mqtt:
+  host: "192.168.1.100"
+  port: 1883
+  username: "mqtt_user"
+  password: "mqtt_password"
+
+broute:
+  rbid: "00000000000000000000000000000000"  # 32-char hex
+  password: "XXXXXXXXXXXX"  # 12-char
+
+serial:
+  device: "/dev/ttyUSB0"
+
+state_dir: "/var/lib/j11_meter"
