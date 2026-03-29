@@ -652,9 +652,8 @@ class J11Bridge:
         )
         self._meter_mac: bytes | None = None
 
-    def connect(self) -> None:
-        """Full connection flow: channel scan → credentials → PANA handshake."""
-        _get_version(self._ser)
+    def _connect_fresh(self) -> None:
+        """Full fresh connection flow: channel scan -> credentials -> PANA handshake."""
         _ensure_channel_ready(self._ser, self._rbid, self._state_dir)
         _set_broute_credentials(self._ser, self._rbid, self._password)
         _start_broute_with_retry(self._ser, self._rbid, self._state_dir)
@@ -665,6 +664,35 @@ class J11Bridge:
         logger.info("PANA success, meter MAC=%s", self._meter_mac.hex())
 
         _drain_notifications(self._ser, seconds=1.5)
+
+    def connect(self) -> None:
+        """Connect to smart meter, reusing existing B-route session if available."""
+        _get_version(self._ser)
+        global_state, broute_state, _, _ = _get_status(self._ser)
+
+        if global_state == 0x02:
+            self._connect_fresh()
+            return
+
+        if global_state != 0x03:
+            raise RuntimeError(f"unexpected global state: 0x{global_state:02X}")
+
+        if broute_state == 0x01:
+            self._connect_fresh()
+            return
+
+        if broute_state in (0x02, 0x03):
+            logger.info("B-route session already exists. Reusing it.")
+            _open_udp_3610(self._ser)
+            mac = _load_saved_mac(self._state_dir)
+            if mac is None:
+                raise RuntimeError("No saved meter MAC is available")
+            self._meter_mac = mac
+            logger.info("Reusing saved meter MAC=%s", self._meter_mac.hex())
+            _drain_notifications(self._ser, seconds=1.5)
+            return
+
+        raise RuntimeError(f"unexpected B-route state: 0x{broute_state:02X}")
 
     def reconnect(self) -> None:
         """Full reconnection: teardown then connect again."""
