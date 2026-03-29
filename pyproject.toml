@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "j11-meter"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "pyserial",
+    "paho-mqtt>=1.6,<2.0",
+    "pyyaml",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[project.scripts]
+j11-meter = "j11_meter.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
