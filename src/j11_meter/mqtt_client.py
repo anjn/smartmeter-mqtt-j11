@@ -127,24 +127,28 @@ class MQTTPublisher:
         if username:
             self._client.username_pw_set(username, password)
 
+        self._client.on_connect = self._on_connect
         self._client.will_set(AVAILABILITY_TOPIC, payload="offline", qos=1, retain=True)
         self._client.message_callback_add(HA_STATUS_TOPIC, self._on_ha_status)
 
+    def _on_connect(
+        self, client: mqtt.Client, userdata: object, flags: dict, rc: int
+    ) -> None:
+        """Called on every (re)connection — resend availability + discovery + HA subscription."""
+        if rc == 0:
+            logger.info("MQTT connected (rc=%d), resending discovery", rc)
+            client.publish(AVAILABILITY_TOPIC, payload="online", qos=1, retain=True)
+            for topic, payload in self._discovery_payloads.items():
+                client.publish(topic, payload=payload, qos=1, retain=True)
+            client.subscribe(HA_STATUS_TOPIC, qos=1)
+        else:
+            logger.error("MQTT connection failed (rc=%d)", rc)
+
     def connect(self) -> None:
-        """Connect to broker, start loop, publish availability + discovery, subscribe to HA status."""
+        """Connect to broker and start loop. Discovery is handled by on_connect callback."""
         self._client.connect(self._host, self._port)
         self._client.loop_start()
-        logger.info("MQTT connected to %s:%d", self._host, self._port)
-
-        self._client.publish(AVAILABILITY_TOPIC, payload="online", qos=1, retain=True)
-        logger.info("Published availability=online")
-
-        for topic, payload in self._discovery_payloads.items():
-            self._client.publish(topic, payload=payload, qos=1, retain=True)
-            logger.debug("Published discovery to %s", topic)
-
-        self._client.subscribe(HA_STATUS_TOPIC, qos=1)
-        logger.info("Subscribed to %s", HA_STATUS_TOPIC)
+        logger.info("MQTT connecting to %s:%d", self._host, self._port)
 
     def publish_state(self, state: dict[str, str]) -> None:
         """Publish each state topic (qos=0, retain=True)."""
