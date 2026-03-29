@@ -10,6 +10,11 @@ MQTT service for publishing smart meter data (RS-WSUHA-J11) to Home Assistant vi
 
 ## Installation
 
+> **Note:** Requires `setuptools>=68.0` (for PEP 621 support). If `pip install .` produces `UNKNOWN-0.0.0`, upgrade first:
+> ```bash
+> pip install --upgrade pip setuptools wheel
+> ```
+
 ```bash
 pip install .
 ```
