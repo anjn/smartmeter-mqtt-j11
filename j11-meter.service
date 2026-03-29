@@ -1,0 +1,14 @@
+[Unit]
+Description=J11 Smart Meter MQTT Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 -m j11_meter.main --config /etc/j11_meter/config.yaml
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
