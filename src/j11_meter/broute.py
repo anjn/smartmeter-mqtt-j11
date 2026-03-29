@@ -482,7 +482,7 @@ def _send_udp_echonet(
     if accept != 0x01:
         raise RuntimeError(f"0x0008 rejected: 0x{accept:02X}")
 
-    logger.info("udp send accepted, send_result=0x%02X", send_result)
+    logger.debug("udp send accepted, send_result=0x%02X", send_result)
     return send_result
 
 
@@ -507,7 +507,7 @@ def _wait_for_udp_recv(
             )
             continue
 
-        logger.info("udp recv notify raw=%s", frame.data.hex())
+        logger.debug("udp recv notify raw=%s", frame.data.hex())
 
         if len(frame.data) < 27:
             continue
@@ -712,13 +712,16 @@ class J11Bridge:
             raise RuntimeError("Not connected — call connect() first")
 
         meter_ipv6 = mac_to_j11_link_local_ipv6(self._meter_mac)
-        logger.info("meter IPv6=%s", ipv6_text(meter_ipv6))
+        logger.debug("meter IPv6=%s", ipv6_text(meter_ipv6))
 
         echonet_get = build_echonet_get_frame(1, [0xE7, 0xE8])
 
         parsed: dict | None = None
         for attempt in range(3):
-            logger.info("Sending ECHONET Get attempt %d", attempt + 1)
+            if attempt == 0:
+                logger.debug("Sending ECHONET Get attempt %d", attempt + 1)
+            else:
+                logger.warning("Retrying ECHONET Get attempt %d", attempt + 1)
             _send_udp_echonet(self._ser, meter_ipv6, echonet_get)
             try:
                 parsed = _wait_for_udp_recv(self._ser, timeout=5.0)
@@ -732,7 +735,7 @@ class J11Bridge:
         if parsed is None:
             raise RuntimeError("No valid ECHONET response")
 
-        logger.info(
+        logger.debug(
             "ECHONET parsed: esv=0x%02X props=%s",
             parsed["esv"],
             [hex(k) for k in parsed["props"].keys()],

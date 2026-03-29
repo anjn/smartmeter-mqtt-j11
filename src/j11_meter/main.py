@@ -111,11 +111,8 @@ def run_service(config: J11Config) -> None:
                     status=status,
                 )
                 publisher.publish_state(state)
-                logger.debug(
-                    "Published: power=%dW, R=%.1fA, T=%.1fA",
-                    power_w,
-                    current_r_a,
-                    current_t_a,
+                logger.info(
+                    "power=%dW, R=%.1fA, T=%.1fA", power_w, current_r_a, current_t_a
                 )
 
             except Exception as e:
