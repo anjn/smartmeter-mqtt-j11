@@ -696,6 +696,9 @@ class J11Bridge:
 
     def reconnect(self) -> None:
         """Full reconnection: teardown then connect again."""
+        # Flush stale data from serial buffer to resync command/response pairing.
+        self._ser.reset_input_buffer()
+        _drain_notifications(self._ser, seconds=0.5)
         try:
             _end_broute_pana(self._ser)
         except Exception:
